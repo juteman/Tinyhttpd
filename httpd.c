@@ -494,7 +494,7 @@ int startup(u_short *port) {
   httpd = socket(PF_INET, SOCK_STREAM, 0);
   if (httpd == -1)
     error_die("socket");
-  // 填充结构体
+  // 初始化sockaddr_in 结构体
   memset(&name, 0, sizeof(name));
   name.sin_family = AF_INET;
   name.sin_port = htons(*port);
