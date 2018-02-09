@@ -1,3 +1,18 @@
 * tinyhttpd 源码解析
-** main()函数分析
-   
+  tinyhttpd的源代码分析
+*** 流程分析
+**** main()函数分析
+     #+BEGIN_SRC c
+int main(void) {
+  int server_sock = -1;
+  u_short port = 0;
+  int client_sock = -1;
+  struct sockaddr_in client_name;
+  socklen_t client_name_len = sizeof(client_name);
+  pthread_t newthread;
+
+  server_sock = startup(&port);
+......
+
+     #+END_SRC
+     
