@@ -31,5 +31,56 @@ struct sockaddr_in
   };
 
      #+END_SRC
-     这是我系统里的sockaddr_in 结构定义，这是ipv4 socket struct
+     这是我系统里的sockaddr_in 结构定义，这是ipv4 socket struct定义
+     
+**** startup()分析
+     
+     #+BEGIN_SRC c
+int startup(u_short *port) {
+  int httpd = 0;
+  struct sockaddr_in name;
+  httpd = socket(PF_INET, SOCK_STREAM, 0);
+  if (httpd == -1)
+    error_die("socket");
+  // 初始化sockaddr_in 结构体
+  memset(&name, 0, sizeof(name));
+  name.sin_family = AF_INET;
+  name.sin_port = htons(*port);
+  name.sin_addr.s_addr = htonl(INADDR_ANY); //INADDR_ANY use for wildcard
+  // 将socket绑定到对应端口上
+  if (bind(httpd, (struct sockaddr *)&name, sizeof(name)) < 0)
+    error_die("bind");
+  if (*port == 0) /* if dynamically allocating a port */
+  {
+    int namelen = sizeof(name);
+  
+    if (getsockname(httpd, (struct sockaddr *)&name, &namelen) == -1)
+      error_die("getsockname");
+    *port = ntohs(name.sin_port);
+  }
+  // 最后开始监听
+  if (listen(httpd, 5) < 0)
+    error_die("listen");
+  return (httpd);
+}
+     #+END_SRC
+***** socket 函数
+     socket函数第一个参数代表Protocol family,PF_INET 于AF_INET相同。代表 IPV4 protocol
+     第二个参数带表socket type，SOCK_STREAM 代表 stream socket
+     第三个参数0,代表系统默认协议
+     socket函数返回一个socket 描述符
+***** htons() htonl()
+      这两函数可以统一大端小端的机器影响，末尾s代表small，l代表long
+
+***** bind 函数
+      将本地协议地址绑定到socket上，成功执行返回0，否则返回-1
+
+***** getsockname 函数
+      如果成功执行connect 函数,并且没有执行bind函数. getsockname 返回ip地址和端口
+      执行bind函数后返回端口
+
+***** listen函数
+      listen函数将CLOSE状态转换为LISTEN状态，即开始监听
+
+
      

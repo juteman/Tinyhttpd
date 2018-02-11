@@ -498,20 +498,14 @@ int startup(u_short *port) {
   memset(&name, 0, sizeof(name));
   name.sin_family = AF_INET;
   name.sin_port = htons(*port);
-  name.sin_addr.s_addr = htonl(INADDR_ANY);
+  name.sin_addr.s_addr = htonl(INADDR_ANY); //INADDR_ANY use for wildcard
   // 将socket绑定到对应端口上
   if (bind(httpd, (struct sockaddr *)&name, sizeof(name)) < 0)
     error_die("bind");
   if (*port == 0) /* if dynamically allocating a port */
   {
     int namelen = sizeof(name);
-    /*
-     *  1. getsockname()可以获得一个与socket相关的地址
-     *    1) 服务器端可以通过它得到相关客户端地址
-     *    2) 客户端可以得到当前已连接成功的socket的IP和端口
-     *  2.
-     * 在客户端不进行bind而直接连接服务器时，而且客户端需要知道当前使用哪个IP进行通信时比较有用（如多网卡的情况）。
-     */
+
     if (getsockname(httpd, (struct sockaddr *)&name, &namelen) == -1)
       error_die("getsockname");
     *port = ntohs(name.sin_port);
@@ -583,3 +577,5 @@ int main(void) {
 
   return (0);
 }
+
+
