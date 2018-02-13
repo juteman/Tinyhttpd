@@ -82,5 +82,97 @@ int startup(u_short *port) {
 ***** listen函数
       listen函数将CLOSE状态转换为LISTEN状态，即开始监听
 
+**** accept()
+     接受sever_sock,此时接收一个http的请求
 
-     
+**** phread_create()
+     NULL参数代表使用系统默认参数,accept_request表示执行的函数，client_sock 为函数的参数
+
+**** accept_request()
+     #+BEGIN_SRC c
+int client = (intptr_t)arg;
+  char buf[1024];
+  size_t numchars;
+  char method[255];
+  char url[255];
+  char path[512];
+  size_t i, j;
+  struct stat st;
+  int cgi = 0; /* becomes true if server decides this is a CGI
+                * program */
+  char *query_string = NULL;
+
+  numchars = get_line(client, buf, sizeof(buf));
+  i = 0;
+  j = 0;
+
+//这里将buf里的字符串赋给method，并且去掉空白字符
+  while (!ISspace(buf[i]) && (i < sizeof(method) - 1)) {
+    method[i] = buf[i];
+    i++;
+  }
+  j = i;
+  method[i] = '\0';
+
+//这里判断如果既不是"GET",也不是"POST" 的话o,请求失败
+  if (strcasecmp(method, "GET") && strcasecmp(method, "POST")) {
+    unimplemented(client);
+    return;
+  }
+
+//若果是"POST"的话，cgi为开启状态
+  if (strcasecmp(method, "POST") == 0)
+    cgi = 1;
+
+  i = 0;
+  while (ISspace(buf[j]) && (j < numchars)) //跳过空白符
+    j++;
+//读取url地址
+  while (!ISspace(buf[j]) && (i < sizeof(url) - 1) && (j < numchars)) {
+    url[i] = buf[j];
+    i++;
+    j++;
+  }
+  url[i] = '\0';
+
+//如果是"GET",GET的url中带有"?",如果读取到?则cgi开启
+  if (strcasecmp(method, "GET") == 0) {
+    query_string = url;
+    while ((*query_string != '?') && (*query_string != '\0'))
+      query_string++;
+    if (*query_string == '?') {
+      cgi = 1;
+      *query_string = '\0';
+      query_string++;
+    }
+  }
+
+//将url格式化放入path中
+  sprintf(path, "htdocs%s", url);
+  if (path[strlen(path) - 1] == '/')
+    strcat(path, "index.html"); //将默认设为index.html
+  if (stat(path, &st) == -1) {
+    while ((numchars > 0) && strcmp("\n", buf)) /* read & discard headers */
+      numchars = get_line(client, buf, sizeof(buf));
+    not_found(client);
+  } else { //如果是目录的话
+    if ((st.st_mode & S_IFMT) == S_IFDIR)
+      strcat(path, "/index.html");
+    if ((st.st_mode & S_IXUSR) || (st.st_mode & S_IXGRP) ||
+        (st.st_mode & S_IXOTH))  //如果又执行权限的话，cgi开启
+      cgi = 1;
+    if (!cgi) 
+      serve_file(client, path);
+    else
+      execute_cgi(client, path, method, query_string);
+  }
+
+  close(client);
+}
+     #+END_SRC
+***** get_line()
+      一个字符一个字符的读取socket的第一行，保存在buf里
+***** stat()
+      stat(pathname,buf) 。将buf作为一个指针，指像pathname文件的文件信息结构体上
+      S_IXUSR S_IXGRP S_IXOTH 分别代表了用户 用户组 和其他的执行权限
+      
