@@ -180,7 +180,7 @@ int client = (intptr_t)arg;
       S_IXUSR S_IXGRP S_IXOTH 分别代表了用户 用户组 和其他的执行权限
       
 **** execute_cgi()
-     #+BEGIN_SRC
+     #+BEGIN_SRC c
 if ((pid = fork()) < 0) { //创建一个子进程
     cannot_execute(client);
     return;
