@@ -180,4 +180,54 @@ int client = (intptr_t)arg;
       S_IXUSR S_IXGRP S_IXOTH 分别代表了用户 用户组 和其他的执行权限
       
 **** execute_cgi()
+     #+BEGIN_SRC
+if ((pid = fork()) < 0) { //创建一个子进程
+    cannot_execute(client);
+    return;
+  }
+  sprintf(buf, "HTTP/1.0 200 OK\r\n");
+  send(client, buf, strlen(buf), 0);
+  if (pid == 0) /* child: CGI script */ //子进程执行if
+  {
+    char meth_env[255];
+    char query_env[255];
+    char length_env[255];
+
+    dup2(cgi_output[1], STDOUT);
+    dup2(cgi_input[0], STDIN);
+    close(cgi_output[0]);
+    close(cgi_input[1]);
+    sprintf(meth_env, "REQUEST_METHOD=%s", method);
+    putenv(meth_env);
+    if (strcasecmp(method, "GET") == 0) {
+      sprintf(query_env, "QUERY_STRING=%s", query_string);
+      putenv(query_env);
+    } else { /* POST */
+      sprintf(length_env, "CONTENT_LENGTH=%d", content_length);
+      putenv(length_env);
+    }
+    execl(path, NULL); //执行cgi程序，无参数
+    exit(0);
+  } else { /* parent */
+    close(cgi_output[1]);
+    close(cgi_input[0]);
+    if (strcasecmp(method, "POST") == 0)
+      for (i = 0; i < content_length; i++) {
+        recv(client, &c, 1, 0);
+        write(cgi_input[1], &c, 1); //将post信息写入cgi_input
+      }
+    while (read(cgi_output[0], &c, 1) > 0)
+      send(client, &c, 1, 0);   //将STDOUT的数据写入客户端
+//关闭管道并等待子进程结束
+    close(cgi_output[0]);
+    close(cgi_input[1]);
+    waitpid(pid, &status, 0);
+  }
+}
+     #+END_SRC
+     这里用图片解释父进程与子进程的通信(请忽略我的灵魂画风):
      [[http://7xsrk7.com1.z0.glb.clouddn.com/tinyhttpd%E8%AF%B4%E6%98%8E%E5%9B%BE.png]]
+     有关于进程间通信的内容请阅读《APUE》
+     
+
+最后还要关闭浏览器的链接，因为http是无连接的协议

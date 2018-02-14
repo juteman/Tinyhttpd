@@ -280,7 +280,7 @@ void execute_cgi(int client, const char *path, const char *method,
     close(cgi_output[0]);
     close(cgi_input[1]);
     waitpid(pid, &status, 0);
-  }
+ }
 }
 
 /**********************************************************************/
