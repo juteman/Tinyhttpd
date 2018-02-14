@@ -209,13 +209,14 @@ void execute_cgi(int client, const char *path, const char *method,
 
   buf[0] = 'A';
   buf[1] = '\0';
+  //如果是"GET"方法的话,丢弃http headers
   if (strcasecmp(method, "GET") == 0)
     while ((numchars > 0) && strcmp("\n", buf)) /* read & discard headers */
       numchars = get_line(client, buf, sizeof(buf));
   else if (strcasecmp(method, "POST") == 0) /*POST*/
   {
     numchars = get_line(client, buf, sizeof(buf));
-    while ((numchars > 0) && strcmp("\n", buf)) {
+    while ((numchars > 0) && strcmp("\n", buf)) { //找到Content-Length
       buf[15] = '\0';
       if (strcasecmp(buf, "Content-Length:") == 0)
         content_length = atoi(&(buf[16]));
@@ -228,7 +229,7 @@ void execute_cgi(int client, const char *path, const char *method,
   } else /*HEAD or other*/
   {
   }
-
+  //建立管道
   if (pipe(cgi_output) < 0) {
     cannot_execute(client);
     return;
@@ -238,13 +239,13 @@ void execute_cgi(int client, const char *path, const char *method,
     return;
   }
 
-  if ((pid = fork()) < 0) {
+  if ((pid = fork()) < 0) { //创建一个子进程
     cannot_execute(client);
     return;
   }
   sprintf(buf, "HTTP/1.0 200 OK\r\n");
   send(client, buf, strlen(buf), 0);
-  if (pid == 0) /* child: CGI script */
+  if (pid == 0) /* child: CGI script */ //子进程执行if
   {
     char meth_env[255];
     char query_env[255];

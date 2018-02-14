@@ -172,7 +172,12 @@ int client = (intptr_t)arg;
      #+END_SRC
 ***** get_line()
       一个字符一个字符的读取socket的第一行，保存在buf里
+***** get_line()中的recv()函数
+      recv()与read()函数大致相同，读取时会有一个读取指针偏移,
+      下一次读取时会从上一次读取出开始
 ***** stat()
       stat(pathname,buf) 。将buf作为一个指针，指像pathname文件的文件信息结构体上
       S_IXUSR S_IXGRP S_IXOTH 分别代表了用户 用户组 和其他的执行权限
       
+**** execute_cgi()
+     [[http://7xsrk7.com1.z0.glb.clouddn.com/tinyhttpd%E8%AF%B4%E6%98%8E%E5%9B%BE.png]]
